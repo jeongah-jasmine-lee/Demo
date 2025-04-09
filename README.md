@@ -19,7 +19,7 @@ This checklist helps verify whether the app's functionality works as expected. E
 
 ### 1️⃣ Permission Handling
 
-- [ ] App requests **"Draw over other apps"** permission  
+- [X] App requests **"Display over other apps"** permission  
   🔧 File(s): `MainActivity.kt`, `AndroidManifest.xml` (`SYSTEM_ALERT_WINDOW`)
 
 - [ ] If not granted, app opens the correct **settings screen**  
