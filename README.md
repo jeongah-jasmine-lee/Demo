@@ -90,10 +90,9 @@ This checklist helps verify whether the app's functionality works as expected. E
 1. Open the project in **Android Studio**
 2. Add the missing resource folders if needed:
    - `res/layout/`, `res/drawable/`, `res/menu/`, `res/xml/`, `res/values/`
-3. Paste each file into its corresponding folder
-4. Sync Gradle
-5. Run the app on a real device (accessibility services don’t work well on emulators)
-6. Grant both **overlay** and **accessibility** permissions when prompted
+3. Sync Gradle
+4. Run the app on a real device (accessibility services don’t work well on emulators)
+5. Grant both **overlay** and **accessibility** permissions when prompted
 
 ---
 
