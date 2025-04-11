@@ -22,7 +22,7 @@ This checklist helps verify whether the app's functionality works as expected. E
 - [X] App requests **"Display over other apps"** permission  
   🔧 File(s): `MainActivity.kt`, `AndroidManifest.xml` (`SYSTEM_ALERT_WINDOW`)
 
-- [ ] If not granted, app opens the correct **settings screen**  
+- [X] If not granted, app opens the correct **settings screen**  
   🔧 File(s): `MainActivity.kt` → `Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)`
 
 - [ ] App requests **Accessibility Service** activation if not enabled  
@@ -35,7 +35,7 @@ This checklist helps verify whether the app's functionality works as expected. E
 
 ### 2️⃣ Floating Button Behavior
 
-- [ ] Floating button appears after all permissions are granted  
+- [X] Floating button appears after all permissions are granted  
   🔧 File(s): `MainActivity.kt`, `FloatingService.kt` → `createFloatingButton()`
 
 - [ ] Button can be dragged/moved on the screen  
