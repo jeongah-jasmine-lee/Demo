@@ -1,41 +1,63 @@
 package com.example.demo
 
+import android.accessibilityservice.AccessibilityServiceInfo
+import android.content.Context
 import android.content.Intent
-import android.content.DialogInterface
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import android.util.Log
-import android.view.View
+import android.view.accessibility.AccessibilityManager
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import android.os.Handler
-import android.os.Looper
-import android.os.Build
 
 class MainActivity : AppCompatActivity() {
+
     private val OVERLAY_PERMISSION_REQUEST_CODE = 1234
     private val TAG = "KindleNav_MainActivity" // Tag for logging
+
+    // Handler and Runnable to periodically check whether the accessibility service is enabled
+    private val handler = Handler(Looper.getMainLooper())
+    private val checkAccessibilityRunnable = object : Runnable {
+        override fun run() {
+            Log.d(TAG, "Periodic check: isAccessibilityServiceEnabled() called")
+            if (isAccessibilityServiceEnabled()) {
+                Log.i(TAG, "Accessibility service is enabled, starting floating service")
+                startFloatingService()
+                // Stop further checks once service is started
+                handler.removeCallbacks(this)
+            } else {
+                Log.d(TAG, "Accessibility service still not enabled. Check again in 100 ms.")
+                handler.postDelayed(this, 100)
+                Log.d(TAG, "Accessibility service re-check.")
+                startFloatingService()
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
         Log.i(TAG, "Application started")
         checkAndRequestPermissions()
     }
 
     private fun checkAndRequestPermissions() {
         if (!Settings.canDrawOverlays(this)) {
-            // Request overlay permission
+            // Request "Display over other apps" permission
             Log.i(TAG, "Requesting 'Display over other apps' permission")
-            val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
+            val intent = Intent(
+                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                Uri.parse("package:$packageName")
+            )
             startActivityForResult(intent, OVERLAY_PERMISSION_REQUEST_CODE)
         } else if (!isAccessibilityServiceEnabled()) {
             Log.i(TAG, "Overlay permission granted, requesting Accessibility Service activation")
             showAccessibilityInstructions()
-            startFloatingService()
         } else {
             Log.i(TAG, "All permissions granted, starting floating service")
             startFloatingService()
@@ -43,36 +65,25 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun isAccessibilityServiceEnabled(): Boolean {
-        try {
-            val accessibilityEnabled = Settings.Secure.getInt(
-                contentResolver,
-                Settings.Secure.ACCESSIBILITY_ENABLED, 0
-            )
+        Log.d(TAG, "isAccessibilityServiceEnabled started")
+        val accessibilityManager =
+            getSystemService(Context.ACCESSIBILITY_SERVICE) as AccessibilityManager
+        val enabledServices =
+            accessibilityManager.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK)
+        Log.d(TAG, "Number of enabled services: ${enabledServices.size}")
 
-            Log.d(TAG, "Accessibility enabled setting: $accessibilityEnabled")
-
-            if (accessibilityEnabled == 1) {
-                val serviceString = Settings.Secure.getString(
-                    contentResolver,
-                    Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
-                )
-
-                Log.d(TAG, "Enabled services: $serviceString")
-
-                val expectedServiceName = "${packageName}/.KindleAccessibilityService"
-                val isServiceEnabled = serviceString?.contains(expectedServiceName) == true
-
-                Log.d(TAG, "Looking for service: $expectedServiceName, found: $isServiceEnabled")
-
-                return isServiceEnabled
+        for (service in enabledServices) {
+            val enabledServiceName = service.resolveInfo.serviceInfo.name
+            val enabledServicePackage = service.resolveInfo.serviceInfo.packageName
+            Log.d(TAG, "Enabled service: $enabledServicePackage/$enabledServiceName")
+            // Check for exact package and service class name
+            if (enabledServicePackage == packageName && enabledServiceName == "com.example.demo.KindleAccessibilityService") {
+                Log.d(TAG, "Accessibility service detected!")
+                return true
             }
-
-            Log.d(TAG, "Accessibility services are not enabled on the device")
-            return false
-        } catch (e: Exception) {
-            Log.e(TAG, "Error checking if accessibility service is enabled", e)
-            return false
         }
+        Log.d(TAG, "Accessibility service not detected")
+        return false
     }
 
     private fun showAccessibilityInstructions() {
@@ -89,7 +100,11 @@ class MainActivity : AppCompatActivity() {
                     Log.i(TAG, "Opening Accessibility Settings screen")
                 } catch (e: Exception) {
                     Log.e(TAG, "Error opening accessibility settings", e)
-                    Toast.makeText(this, "Error opening settings: ${e.message}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(
+                        this,
+                        "Error opening settings: ${e.message}",
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
             }
             .setNegativeButton("Cancel") { dialog, _ ->
@@ -115,7 +130,11 @@ class MainActivity : AppCompatActivity() {
             finish()
         } catch (e: Exception) {
             Log.e(TAG, "Error starting floating service", e)
-            Toast.makeText(this, "Error starting service: ${e.message}", Toast.LENGTH_LONG).show()
+            Toast.makeText(
+                this,
+                "Error starting service: ${e.message}",
+                Toast.LENGTH_LONG
+            ).show()
         }
     }
 
@@ -140,29 +159,15 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        Log.d(TAG, "onResume called")
+        Log.d(TAG, "onResume called, starting periodic accessibility check")
+        // Start checking periodically whether the accessibility service is enabled
+        handler.post(checkAccessibilityRunnable)
+    }
 
-        // Give the system a moment to register the accessibility service
-        Handler(Looper.getMainLooper()).postDelayed({
-            if (!isFinishing) {
-                Log.d(TAG, "Checking permissions after delay")
-                // Check both permissions again
-                if (Settings.canDrawOverlays(this)) {
-                    Log.d(TAG, "Overlay permission is granted")
-                    if (isAccessibilityServiceEnabled()) {
-                        Log.i(TAG, "Accessibility service is now enabled, starting floating service")
-                        startFloatingService()
-                    } else {
-                        Log.d(TAG, "Accessibility service still not enabled")
-                        // Only show the dialog if we're not coming back immediately from settings
-                        // to avoid bothering the user too much
-                        showAccessibilityInstructions()
-                    }
-                } else {
-                    Log.d(TAG, "Overlay permission not granted")
-                    checkAndRequestPermissions()
-                }
-            }
-        }, 1000) // Short delay to let system update accessibility status
+    override fun onPause() {
+        super.onPause()
+        Log.d(TAG, "onPause called, stopping periodic accessibility check")
+        // Stop the periodic check when the activity is not visible
+        handler.removeCallbacks(checkAccessibilityRunnable)
     }
 }
