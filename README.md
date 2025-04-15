@@ -25,10 +25,10 @@ This checklist helps verify whether the app's functionality works as expected. E
 - [X] If not granted, app opens the correct **settings screen**  
   🔧 File(s): `MainActivity.kt` → `Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)`
 
-- [ ] App requests **Accessibility Service** activation if not enabled  
+- [X] App requests **Accessibility Service** activation if not enabled  
   🔧 File(s): `MainActivity.kt` → `showAccessibilityInstructions()`
 
-- [ ] Opens **Accessibility Settings screen** successfully  
+- [X] Opens **Accessibility Settings screen** successfully  
   🔧 File(s): `MainActivity.kt`, `KindleAccessibilityService.kt`
 
 ---
@@ -44,10 +44,10 @@ This checklist helps verify whether the app's functionality works as expected. E
 - [ ] Clicking the button launches Kindle or sends navigation intent  
   🔧 File(s): `FloatingService.kt` → `performLibraryClick()`
 
-- [ ] Long-pressing the button shows a menu (e.g., "Close Floating Button")  
+- [X] Long-pressing the button shows a menu (e.g., "Close Floating Button")  
   🔧 File(s): `FloatingService.kt` → `showOptionsPopup()`, `floating_button_menu.xml`
 
-- [ ] "Close" option removes the floating button  
+- [X] "Close" option removes the floating button  
   🔧 File(s): `FloatingService.kt` → `stopSelf()`
 
 ---
